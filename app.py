@@ -5,17 +5,27 @@ import os
 
 app = Flask(__name__)
 
-# Load model
-model_path = os.path.join(os.path.dirname(__file__), '..', 'models', 'model.pkl')
-model = pickle.load(open(model_path, 'rb'))
+# =========================
+# PATH FIX (IMPORTANT for Render)
+# =========================
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Load processed dataset
-data_path = os.path.join(os.path.dirname(__file__), '..', 'data', 'processed_data.csv')
+model_path = os.path.join(BASE_DIR, "models", "model.pkl")
+data_path = os.path.join(BASE_DIR, "data", "processed_data.csv")
+
+# =========================
+# LOAD MODEL & DATA
+# =========================
+model = pickle.load(open(model_path, 'rb'))
 df = pd.read_csv(data_path)
 
+# =========================
+# ROUTES
+# =========================
 @app.route('/')
 def home():
     return render_template('index.html')
+
 
 @app.route('/predict', methods=['POST'])
 def predict():
@@ -32,8 +42,7 @@ def predict():
         if row.empty:
             return render_template('index.html', prediction_text="❌ Flight not found!")
 
-        # 🔥 IMPORTANT FIX
-        # Drop both target + FlightNum (ID should not go into model)
+        # Drop unnecessary columns
         X = row.drop(['Delayed', 'FlightNum'], axis=1, errors='ignore')
 
         prediction = model.predict(X)
@@ -45,5 +54,9 @@ def predict():
     except Exception as e:
         return render_template('index.html', prediction_text=f"Error: {str(e)}")
 
+
+# =========================
+# MAIN
+# =========================
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=10000)
